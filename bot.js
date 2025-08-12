@@ -61,12 +61,14 @@ async function walkForwardBackward() {
 }
 
 function createBot() {
-  bot = mineflayer.createBot({
-    host: 'TokyoServer.aternos.me',
-    port: 43234,
-    username: 'TOKyodot',
-    version: '1.20.4' // تأكد من أنه نفس إصدار السيرفر
-  });
+  bbot = mineflayer.createBot({
+  host: 'TokyoServer.aternos.me',
+  port: 43234,
+  username: 'TOKyodot',
+  // version: '1.20.4', // جرب إزالة هذا السطر إذا غير متأكد
+  connectTimeout: 60000, // زيادة مهلة الاتصال إلى 60 ثانية
+  keepAlive: true,
+});
 
   bot.on('login', () => {
     logMsg(`✅ Logged in as ${bot.username}`);
@@ -136,3 +138,4 @@ function logMsg(msg) {
 }
 
 createBot();
+
