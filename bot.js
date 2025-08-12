@@ -20,6 +20,7 @@ app.get('/', (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>TOKyodot Bot Control</title>
       <style>
+        /* --- CSS هنا كما في كودك السابق --- */
         :root {
           --primary: #5865F2;
           --dark: #1e1f22;
@@ -29,9 +30,7 @@ app.get('/', (req, res) => {
           --danger: #ed4245;
         }
         * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
+          margin: 0; padding: 0; box-sizing: border-box;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         body {
@@ -49,7 +48,7 @@ app.get('/', (req, res) => {
           padding: 15px 20px;
           border-radius: 8px;
           margin-bottom: 20px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -80,7 +79,7 @@ app.get('/', (req, res) => {
           background-color: var(--dark);
           border-radius: 8px;
           padding: 15px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           height: 500px;
           overflow: hidden;
           display: flex;
@@ -147,7 +146,7 @@ app.get('/', (req, res) => {
           background-color: var(--dark);
           border-radius: 8px;
           padding: 15px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .control-title {
           font-size: 16px;
@@ -228,6 +227,7 @@ app.get('/', (req, res) => {
         const stopBtn = document.getElementById('stop-btn');
         const restartBtn = document.getElementById('restart-btn');
         
+        // Format timestamp
         function getTimestamp() {
           const now = new Date();
           const hours = now.getHours().toString().padStart(2, '0');
@@ -236,14 +236,16 @@ app.get('/', (req, res) => {
           return \`\${hours}:\${minutes}:\${seconds}\`;
         }
         
+        // Add log message
         function addLog(msg, type = 'system') {
           const logEntry = document.createElement('div');
           logEntry.className = \`log-entry \${type}\`;
-          logEntry.innerHTML = \`<span class="timestamp">\${getTimestamp()}</span>\${msg}\`;
+          logEntry.innerHTML = \`<span class="timestamp">\${getTimestamp()}</span> \${msg}\`;
           logs.appendChild(logEntry);
           logs.scrollTop = logs.scrollHeight;
         }
         
+        // Socket events
         socket.on('log', (data) => {
           addLog(data.message, data.type || 'system');
         });
@@ -253,6 +255,7 @@ app.get('/', (req, res) => {
           statusElement.className = \`status \${status.online ? 'online' : 'offline'}\`;
         });
         
+        // Send message function
         function sendMessage() {
           const msg = msgInput.value.trim();
           if (msg) {
@@ -262,15 +265,18 @@ app.get('/', (req, res) => {
           }
         }
         
+        // Event listeners
         sendBtn.addEventListener('click', sendMessage);
         msgInput.addEventListener('keypress', (e) => {
           if (e.key === 'Enter') sendMessage();
         });
         
+        // Control buttons
         startBtn.addEventListener('click', () => socket.emit('control', 'start'));
         stopBtn.addEventListener('click', () => socket.emit('control', 'stop'));
         restartBtn.addEventListener('click', () => socket.emit('control', 'restart'));
         
+        // Initial status
         socket.emit('getStatus');
       </script>
     </body>
@@ -280,19 +286,16 @@ app.get('/', (req, res) => {
 
 server.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 
-// إعداد متغيرات البيئة
 const discordToken = process.env.DISCORD_TOKEN;
 const discordChannelId = process.env.DISCORD_CHANNEL_ID;
 
-const GMINI_API_URL = process.env.GMINI_API_URL || "https://api.gmini.ai/v1/chat/completions";
+// Gmini AI Config
+const GMINI_API_URL = "https://api.gmini.ai/v1/chat/completions";
 const GMINI_API_KEY = process.env.GMINI_API_KEY || null;
 
-// دالة استدعاء Gmini AI
 async function askAI(question) {
-  if (!GMINI_API_KEY) {
-    return "❌ Gmini API key not configured.";
-  }
-
+  if (!GMINI_API_KEY) return "❌ Gmini API key not configured.";
+  
   try {
     const response = await axios.post(
       GMINI_API_URL,
@@ -300,22 +303,16 @@ async function askAI(question) {
         model: "gmini",
         messages: [{ role: "user", content: question }],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 500
       },
       {
         headers: {
-          Authorization: `Bearer ${GMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+          "Authorization": `Bearer ${GMINI_API_KEY}`,
+          "Content-Type": "application/json"
+        }
       }
     );
-
-    if (
-      response.data &&
-      response.data.choices &&
-      response.data.choices[0] &&
-      response.data.choices[0].message
-    ) {
+    if (response.data && response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
       return response.data.choices[0].message.content.trim();
     }
     return "I couldn't think of an answer.";
@@ -340,49 +337,48 @@ let autoMoveInterval = null;
 let sendMinecraftToDiscord = false;
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function walkForwardBackward() {
   if (!bot || !bot.entity) return;
-  bot.setControlState("forward", true);
+  bot.setControlState('forward', true);
   await sleep(15000);
-  bot.setControlState("forward", false);
-  bot.setControlState("back", true);
+  bot.setControlState('forward', false);
+  bot.setControlState('back', true);
   await sleep(15000);
-  bot.setControlState("back", false);
+  bot.setControlState('back', false);
 }
 
-function logMsg(msg, type = "system") {
+function logMsg(msg, type = 'system') {
   console.log(msg);
-  io.emit("log", { message: msg, type });
-
+  io.emit('log', { message: msg, type });
+  
+  // Update status in the web interface
   const isOnline = bot !== null;
-  io.emit("status", {
-    text: isOnline ? "Online" : "Offline",
-    online: isOnline,
+  io.emit('status', {
+    text: isOnline ? 'Online' : 'Offline',
+    online: isOnline
   });
 }
 
 function createBot() {
   bot = mineflayer.createBot({
-    host: "TokyoServer.aternos.me",
+    host: 'TokyoServer.aternos.me',
     port: 43234,
-    username: "TOKyodot",
+    username: 'TOKyodot',
     connectTimeout: 60000,
     keepAlive: true,
   });
 
-  bot.once("login", () => {
+  bot.once('login', () => {
     logMsg(`✅ Logged in as ${bot.username}`);
 
     if (!autoMessageInterval) {
       autoMessageInterval = setInterval(() => {
         if (bot && bot.chat) {
-          bot.chat(
-            "Welcome to Tokyo dz server — join our Discord: https://discord.gg/E4XpZeywAJ"
-          );
-          logMsg("📢 Auto-message sent.");
+          bot.chat('Welcome to Tokyo dz server — join our Discord: https://discord.gg/E4XpZeywAJ');
+          logMsg('📢 Auto-message sent.');
         }
       }, 15 * 60 * 1000);
     }
@@ -394,8 +390,8 @@ function createBot() {
     }
   });
 
-  bot.on("end", () => {
-    logMsg("⚠️ Bot disconnected, reconnecting...", "error");
+  bot.on('end', () => {
+    logMsg('⚠️ Bot disconnected, reconnecting...', 'error');
 
     if (autoMessageInterval) {
       clearInterval(autoMessageInterval);
@@ -409,16 +405,16 @@ function createBot() {
     setTimeout(createBot, 5000);
   });
 
-  bot.on("error", (err) => logMsg(`❌ Error: ${err}`, "error"));
+  bot.on('error', (err) => logMsg(`❌ Error: ${err}`, 'error'));
 
-  bot.on("chat", (username, message) => {
-    logMsg(`<${username}> ${message}`, "chat");
+  bot.on('chat', (username, message) => {
+    logMsg(`<${username}> ${message}`, 'chat');
 
-    if (message.startsWith("!ask ")) {
+    if (message.startsWith('!ask ')) {
       const question = message.slice(5).trim();
       if (!question) return bot.chat("Please provide a question.");
       bot.chat("💭 Thinking...");
-      askAI(question).then((answer) => {
+      askAI(question).then(answer => {
         bot.chat(`🤖 ${answer}`);
       });
     }
@@ -432,96 +428,120 @@ function createBot() {
   });
 }
 
-io.on("connection", (socket) => {
-  logMsg("🌐 Web client connected");
-
-  // إرسال حالة البوت للواجهة فور الاتصال
-  socket.emit("status", {
-    text: bot ? "Online" : "Offline",
-    online: bot !== null,
+io.on('connection', (socket) => {
+  logMsg('🌐 Web client connected');
+  
+  // Send initial status
+  socket.emit('status', {
+    text: bot ? 'Online' : 'Offline',
+    online: bot !== null
   });
 
-  socket.on("sendMessage", (msg) => {
+  socket.on('sendMessage', (msg) => {
     if (bot && bot.chat) {
       bot.chat(msg);
-      logMsg(`💬 [WEB] ${msg}`, "chat");
+      logMsg(`💬 [WEB] ${msg}`, 'chat');
     }
   });
 
-  socket.on("control", (action) => {
+  socket.on('control', (action) => {
     switch (action) {
-      case "start":
+      case 'start':
         if (!bot) {
           createBot();
-          logMsg("🔄 Bot started by web interface");
+          logMsg('🔄 Bot started by web interface');
         }
         break;
-      case "stop":
+      case 'stop':
         if (bot) {
-          bot.quit("Stopped via web interface");
+          bot.quit('Stopped via web interface');
           bot = null;
           if (autoMessageInterval) clearInterval(autoMessageInterval);
           if (autoMoveInterval) clearInterval(autoMoveInterval);
-          logMsg("🛑 Bot stopped by web interface");
+          logMsg('🛑 Bot stopped by web interface');
         }
         break;
-      case "restart":
+      case 'restart':
         if (bot) {
-          bot.quit("Restarting via web interface");
+          bot.quit('Restarting via web interface');
           bot = null;
           if (autoMessageInterval) clearInterval(autoMessageInterval);
           if (autoMoveInterval) clearInterval(autoMoveInterval);
           setTimeout(createBot, 3000);
-          logMsg("🔄 Bot restarting...");
+          logMsg('🔄 Bot restarting...');
         }
         break;
     }
   });
 
-  socket.on("getStatus", () => {
-    socket.emit("status", {
-      text: bot ? "Online" : "Offline",
-      online: bot !== null,
+  socket.on('getStatus', () => {
+    socket.emit('status', {
+      text: bot ? 'Online' : 'Offline',
+      online: bot !== null
     });
   });
 });
 
-// تحقق من موقع ويب كل 5 دقائق (اختياري)
-let lastWebsiteStatus = "Unknown";
-async function checkWebsite() {
-  try {
-    await axios.get("https://lol-33.onrender.com/");
-    lastWebsiteStatus = "✅ Online";
-  } catch (err) {
-    lastWebsiteStatus = "❌ Offline";
-  }
-}
-setInterval(checkWebsite, 5 * 60 * 1000);
-checkWebsite();
-
-discordClient.on("ready", () => {
+// Discord bot setup
+discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
 });
 
-discordClient.on("messageCreate", async (message) => {
+discordClient.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (message.channel.id !== discordChannelId) return;
 
   const content = message.content.trim();
 
-  if (content === "/start") {
+  if (content === '/start') {
     if (bot) {
-      message.channel.send("Minecraft bot is already running.");
+      message.channel.send('Minecraft bot is already running.');
     } else {
       createBot();
-      message.channel.send("Minecraft bot started.");
+      message.channel.send('Minecraft bot started.');
     }
-  } else if (content === "/stop") {
+  } else if (content === '/stop') {
     if (bot) {
-      bot.quit("Stopped via Discord.");
+      bot.quit('Stopped via Discord.');
       bot = null;
       if (autoMessageInterval) clearInterval(autoMessageInterval);
       if (autoMoveInterval) clearInterval(autoMoveInterval);
-      message.channel.send("Minecraft bot stopped.");
+      message.channel.send('Minecraft bot stopped.');
     } else {
-      message.channel.send("Minecraft bot is not ru
+      message.channel.send('Minecraft bot is not running.');
+    }
+  } else if (content === '/rs') {
+    if (bot) {
+      bot.quit('Restarting...');
+      bot = null;
+      if (autoMessageInterval) clearInterval(autoMessageInterval);
+      if (autoMoveInterval) clearInterval(autoMoveInterval);
+      setTimeout(() => {
+        createBot();
+        message.channel.send('Minecraft bot restarted.');
+      }, 3000);
+    } else {
+      message.channel.send('Minecraft bot is not running.');
+    }
+  } else if (content === '/pn') {
+    sendMinecraftToDiscord = !sendMinecraftToDiscord;
+    message.channel.send(sendMinecraftToDiscord ? '📩 Minecraft messages will be sent here.' : '🚫 Minecraft messages disabled.');
+  } else if (content === '/ping') {
+    message.channel.send(`📊 **System Status**:
+- Discord Bot: ${discordClient.isReady() ? '✅ Online' : '❌ Offline'}
+- Minecraft Bot: ${bot ? '✅ Connected' : '❌ Disconnected'}`);
+  } else if (content.startsWith('/ask ')) {
+    const question = content.slice(5).trim();
+    if (!question) return message.reply("Please provide a question.");
+    message.channel.send("💭 Thinking...");
+    const answer = await askAI(question);
+    message.channel.send(`🤖 ${answer}`);
+  } else {
+    if (bot && bot.chat) {
+      bot.chat(content);
+      message.react('✅');
+    }
+  }
+});
+
+discordClient.login(discordToken);
