@@ -5,7 +5,6 @@ const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +19,172 @@ app.get('/', (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>TOKyodot Bot Control</title>
       <style>
-        /* ... هنا نفس ستايل الصفحة كما في كودك ... */
+        :root {
+          --primary: #5865F2;
+          --dark: #1e1f22;
+          --darker: #111214;
+          --light: #f2f3f5;
+          --success: #3ba55c;
+          --danger: #ed4245;
+        }
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+          background-color: var(--darker);
+          color: var(--light);
+          min-height: 100vh;
+          padding: 20px;
+        }
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        header {
+          background: linear-gradient(135deg, var(--primary), #9147ff);
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        h1 {
+          font-size: 24px;
+          font-weight: 600;
+        }
+        .status {
+          background-color: var(--dark);
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        .status.online {
+          color: var(--success);
+        }
+        .status.offline {
+          color: var(--danger);
+        }
+        .panel {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .log-container {
+          flex: 1;
+          background-color: var(--dark);
+          border-radius: 8px;
+          padding: 15px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          height: 500px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .logs {
+          flex: 1;
+          overflow-y: auto;
+          padding: 10px;
+          background-color: #2b2d31;
+          border-radius: 4px;
+          margin-bottom: 15px;
+          font-family: 'Consolas', monospace;
+        }
+        .log-entry {
+          margin-bottom: 5px;
+          line-height: 1.4;
+          word-break: break-word;
+        }
+        .log-entry.system {
+          color: #949cf7;
+        }
+        .log-entry.chat {
+          color: #dbdee1;
+        }
+        .log-entry.error {
+          color: #f04747;
+        }
+        .input-group {
+          display: flex;
+          gap: 10px;
+        }
+        input {
+          flex: 1;
+          padding: 10px 15px;
+          border: none;
+          border-radius: 4px;
+          background-color: #383a40;
+          color: var(--light);
+          font-size: 14px;
+        }
+        input:focus {
+          outline: none;
+          box-shadow: 0 0 0 2px var(--primary);
+        }
+        button {
+          padding: 10px 20px;
+          background-color: var(--primary);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: background-color 0.2s;
+        }
+        button:hover {
+          background-color: #4752c4;
+        }
+        button:active {
+          background-color: #3a45a5;
+        }
+        .controls {
+          width: 300px;
+          background-color: var(--dark);
+          border-radius: 8px;
+          padding: 15px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .control-title {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 15px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #383a40;
+        }
+        .control-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .control-btn {
+          padding: 10px;
+          border-radius: 4px;
+          border: none;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .start-btn {
+          background-color: var(--success);
+          color: white;
+        }
+        .stop-btn {
+          background-color: var(--danger);
+          color: white;
+        }
+        .restart-btn {
+          background-color: #faa61a;
+          color: white;
+        }
+        .timestamp {
+          color: #a3a6aa;
+          font-size: 12px;
+          margin-right: 8px;
+        }
       </style>
     </head>
     <body>
@@ -47,6 +211,7 @@ app.get('/', (req, res) => {
           </div>
         </div>
       </div>
+
       <script src="/socket.io/socket.io.js"></script>
       <script>
         const socket = io();
@@ -54,6 +219,8 @@ app.get('/', (req, res) => {
         const msgInput = document.getElementById('msg');
         const sendBtn = document.getElementById('send-btn');
         const statusElement = document.getElementById('connection-status');
+
+        // Control buttons
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const restartBtn = document.getElementById('restart-btn');
@@ -63,36 +230,38 @@ app.get('/', (req, res) => {
           return now.toTimeString().split(' ')[0];
         }
 
-        function addLog(msg, type = 'system') {
+        function addLog(message, type = 'system') {
           const logEntry = document.createElement('div');
           logEntry.className = 'log-entry ' + type;
-          logEntry.innerHTML = '<span class="timestamp">' + getTimestamp() + '</span>' + msg;
+          logEntry.innerHTML = `<span class="timestamp">${getTimestamp()}</span> ${message}`;
           logs.appendChild(logEntry);
           logs.scrollTop = logs.scrollHeight;
         }
 
-        socket.on('log', (data) => addLog(data.message, data.type || 'system'));
-        socket.on('status', (status) => {
+        socket.on('log', data => addLog(data.message, data.type || 'system'));
+        socket.on('status', status => {
           statusElement.textContent = status.text;
           statusElement.className = 'status ' + (status.online ? 'online' : 'offline');
         });
 
         function sendMessage() {
           const msg = msgInput.value.trim();
-          if (msg) {
-            socket.emit('sendMessage', msg);
-            addLog('[You] ' + msg, 'chat');
-            msgInput.value = '';
-          }
+          if (!msg) return;
+          socket.emit('sendMessage', msg);
+          addLog(`[You] ${msg}`, 'chat');
+          msgInput.value = '';
         }
 
-        sendBtn.addEventListener('click', sendMessage);
-        msgInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+        sendBtn.onclick = sendMessage;
+        msgInput.addEventListener('keypress', e => {
+          if (e.key === 'Enter') sendMessage();
+        });
 
-        startBtn.addEventListener('click', () => socket.emit('control', 'start'));
-        stopBtn.addEventListener('click', () => socket.emit('control', 'stop'));
-        restartBtn.addEventListener('click', () => socket.emit('control', 'restart'));
+        startBtn.onclick = () => socket.emit('control', 'start');
+        stopBtn.onclick = () => socket.emit('control', 'stop');
+        restartBtn.onclick = () => socket.emit('control', 'restart');
 
+        // Request initial status
         socket.emit('getStatus');
       </script>
     </body>
@@ -140,11 +309,16 @@ function logMsg(msg, type = 'system') {
   const isOnline = bot !== null;
   io.emit('status', {
     text: isOnline ? 'Online' : 'Offline',
-    online: isOnline
+    online: isOnline,
   });
 }
 
 function createBot() {
+  if (bot) {
+    logMsg('⚠️ Bot is already running.');
+    return;
+  }
+
   bot = mineflayer.createBot({
     host: 'TokyoServer.aternos.me',
     port: 43234,
@@ -172,27 +346,12 @@ function createBot() {
     }
   });
 
-  bot.on('end', () => {
-    logMsg('⚠️ Bot disconnected, reconnecting...', 'error');
-
-    if (autoMessageInterval) {
-      clearInterval(autoMessageInterval);
-      autoMessageInterval = null;
-    }
-    if (autoMoveInterval) {
-      clearInterval(autoMoveInterval);
-      autoMoveInterval = null;
-    }
-
-    setTimeout(createBot, 5000);
-  });
+  // *** IMPORTANT CHANGE: Remove 'end' handler to prevent auto-reconnect or quitting ***
 
   bot.on('error', (err) => logMsg(`❌ Error: ${err}`, 'error'));
 
   bot.on('chat', (username, message) => {
     logMsg(`<${username}> ${message}`, 'chat');
-
-    // هنا لم يعد هناك AI ولا رد تلقائي
 
     if (sendMinecraftToDiscord && discordClient.isReady()) {
       const channel = discordClient.channels.cache.get(discordChannelId);
@@ -208,7 +367,7 @@ io.on('connection', (socket) => {
 
   socket.emit('status', {
     text: bot ? 'Online' : 'Offline',
-    online: bot !== null
+    online: bot !== null,
   });
 
   socket.on('sendMessage', (msg) => {
@@ -251,23 +410,10 @@ io.on('connection', (socket) => {
   socket.on('getStatus', () => {
     socket.emit('status', {
       text: bot ? 'Online' : 'Offline',
-      online: bot !== null
+      online: bot !== null,
     });
   });
 });
-
-// Website check every 5 minutes
-let lastWebsiteStatus = 'Unknown';
-async function checkWebsite() {
-  try {
-    await axios.get('https://lol-33.onrender.com/');
-    lastWebsiteStatus = '✅ Online';
-  } catch (err) {
-    lastWebsiteStatus = '❌ Offline';
-  }
-}
-setInterval(checkWebsite, 5 * 60 * 1000);
-checkWebsite();
 
 discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
@@ -315,10 +461,8 @@ discordClient.on('messageCreate', async (message) => {
   } else if (content === '/ping') {
     message.channel.send(`📊 **System Status**:
 - Discord Bot: ${discordClient.isReady() ? '✅ Online' : '❌ Offline'}
-- Minecraft Bot: ${bot ? '✅ Connected' : '❌ Disconnected'}
-- Website: ${lastWebsiteStatus}`);
+- Minecraft Bot: ${bot ? '✅ Connected' : '❌ Disconnected'}`);
   } else {
-    // يرسل رسالة مباشرة في الماينكرافت
     if (bot && bot.chat) {
       bot.chat(content);
       message.react('✅');
