@@ -12,57 +12,54 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.get('/', (req, res) => {
-  res.send(`<h1 style="color:white;background:#222;padding:10px">TOKyodot Bot Control & Logs</h1>
-  <div id="logs" style="height:400px;overflow:auto;border:1px solid #ccc;padding:5px;background:#111;color:#eee"></div>
-  <input id="msg" placeholder="Type a message..." style="width:80%;padding:5px;margin-top:5px">
-  <button onclick="sendMessage()" style="padding:5px">Send</button>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const logs = document.getElementById('logs');
-    const msgInput = document.getElementById('msg');
-    socket.on('log', msg => {
-      logs.innerHTML += msg + '<br>';
-      logs.scrollTop = logs.scrollHeight;
-    });
-    function sendMessage() {
-      const msg = msgInput.value;
-      if(msg.trim() !== "") {
-        socket.emit('sendMessage', msg);
-        msgInput.value = "";
+  res.send(`
+    <h1 style="color:white;background:#222;padding:10px">TOKyodot Bot Control & Logs</h1>
+    <div id="logs" style="height:400px;overflow:auto;border:1px solid #ccc;padding:5px;background:#111;color:#eee"></div>
+    <input id="msg" placeholder="Type a message..." style="width:80%;padding:5px;margin-top:5px" />
+    <button onclick="sendMessage()" style="padding:5px">Send</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const logs = document.getElementById('logs');
+      const msgInput = document.getElementById('msg');
+      socket.on('log', msg => {
+        logs.innerHTML += msg + '<br>';
+        logs.scrollTop = logs.scrollHeight;
+      });
+      function sendMessage() {
+        const msg = msgInput.value;
+        if(msg.trim() !== "") {
+          socket.emit('sendMessage', msg);
+          msgInput.value = "";
+        }
       }
-    }
-  </script>`);
+    </script>
+  `);
 });
+
 server.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 
 const discordToken = process.env.DISCORD_TOKEN;
 const discordChannelId = process.env.DISCORD_CHANNEL_ID;
 
-// HuggingFace AI Config
-const HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base";
-const HF_API_KEY = process.env.HF_API_KEY || null;
+// OpenRouter API (مجاني تمامًا، بدون مفتاح)
+const OPENROUTER_API_URL = "https://openrouter.ai/api/chat/completions";
 
 async function askAI(question) {
   try {
-    const response = await axios.post(
-      HF_API_URL,
-      { inputs: question },
-      {
-        headers: HF_API_KEY
-          ? { Authorization: `Bearer ${HF_API_KEY}` }
-          : {},
+    const response = await axios.post(OPENROUTER_API_URL, {
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: question }],
+    }, {
+      headers: {
+        "Content-Type": "application/json",
       }
-    );
-    if (Array.isArray(response.data) && response.data.length > 0 && response.data[0].generated_text) {
-      return response.data[0].generated_text.trim();
-    }
-    if (typeof response.data === "string") {
-      return response.data.trim();
-    }
-    if (response.data && response.data.generated_text) {
-      return response.data.generated_text.trim();
-    }
+    });
+
+    // قراءة الإجابة من API
+    const answer = response.data.choices?.[0]?.message?.content;
+    if (answer) return answer.trim();
+
     return "I couldn't think of an answer.";
   } catch (err) {
     console.error("AI Error:", err.message);
@@ -74,9 +71,9 @@ const discordClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
   ],
-  partials: [Partials.Channel]
+  partials: [Partials.Channel],
 });
 
 let bot = null;
@@ -151,7 +148,6 @@ function createBot() {
   bot.on('chat', (username, message) => {
     logMsg(`<${username}> ${message}`);
 
-    // AI command from Minecraft
     if (message.startsWith('!ask ')) {
       const question = message.slice(5).trim();
       if (!question) return bot.chat("Please provide a question.");
@@ -161,7 +157,6 @@ function createBot() {
       });
     }
 
-    // Send to Discord if enabled
     if (sendMinecraftToDiscord && discordClient.isReady()) {
       const channel = discordClient.channels.cache.get(discordChannelId);
       if (channel) {
@@ -185,7 +180,6 @@ discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
 });
 
-// Website check every 5 minutes
 let lastWebsiteStatus = 'Unknown';
 async function checkWebsite() {
   try {
