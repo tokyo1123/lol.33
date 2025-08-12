@@ -2,9 +2,9 @@
   "name": "tokyodot-bot",
   "version": "1.0.0",
   "description": "Minecraft bot controlled by Discord bot with web interface",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node bot.js"
   },
   "author": "خليل",
   "license": "MIT",
