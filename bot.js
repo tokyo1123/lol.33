@@ -1,10 +1,11 @@
+require('dotenv').config();
+
 const mineflayer = require('mineflayer');
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
-// ===== إعداد Express (مثل كودك السابق) =====
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -34,9 +35,8 @@ app.get('/', (req, res) => {
 });
 server.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 
-// ===== إعداد بوت ديسكورد =====
-const discordToken = 'MTM3ODAzMjExNjIxODA2OTAzMw.GG-72P.A8-7m5mfdwZ3OaKzq5RE6PRHaZ9V4VP45XybS8'; // ضع توكن بوت ديسكورد هنا
-const discordChannelId = '1404811211073392773'; // ضع معرف قناة ديسكورد التي تريد التواصل معها
+const discordToken = process.env.DISCORD_TOKEN;
+const discordChannelId = process.env.DISCORD_CHANNEL_ID;
 
 const discordClient = new Client({
   intents: [
@@ -70,7 +70,6 @@ function logMsg(msg) {
   io.emit('log', msg);
 }
 
-// إنشاء بوت ماينكرافت
 function createBot() {
   bot = mineflayer.createBot({
     host: 'TokyoServer.aternos.me',
@@ -119,7 +118,6 @@ function createBot() {
   bot.on('chat', (username, message) => {
     logMsg(`<${username}> ${message}`);
 
-    // إرسال رسالة ماينكرافت إلى قناة ديسكورد
     if (discordClient.isReady()) {
       const channel = discordClient.channels.cache.get(discordChannelId);
       if (channel) {
@@ -129,7 +127,6 @@ function createBot() {
   });
 }
 
-// التعامل مع رسائل الويب لإرسالها في ماينكرافت
 io.on('connection', (socket) => {
   logMsg('🌐 Web client connected');
   socket.on('sendMessage', (msg) => {
@@ -140,16 +137,12 @@ io.on('connection', (socket) => {
   });
 });
 
-// ===== بوت ديسكورد يتلقى أوامر للتحكم =====
 discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
 });
 
 discordClient.on('messageCreate', async (message) => {
-  // تجاهل الرسائل من البوت نفسه
   if (message.author.bot) return;
-
-  // تحقق إذا في القناة المحددة فقط
   if (message.channel.id !== discordChannelId) return;
 
   const content = message.content.trim();
@@ -197,7 +190,6 @@ discordClient.on('messageCreate', async (message) => {
       message.channel.send('البوت غير مشغل حالياً.');
     }
   } else {
-    // أي رسالة أخرى ترسلها من ديسكورد للماينكرافت
     if (bot && bot.chat) {
       bot.chat(content);
       message.react('✅');
@@ -206,4 +198,3 @@ discordClient.on('messageCreate', async (message) => {
 });
 
 discordClient.login(discordToken);
-
