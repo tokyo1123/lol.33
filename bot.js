@@ -5,6 +5,7 @@ const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,6 +51,7 @@ const discordClient = new Client({
 let bot = null;
 let autoMessageInterval = null;
 let autoMoveInterval = null;
+let sendMinecraftToDiscord = false; // ✅ إضافة خيار التحكم بعرض رسائل ماينكرافت
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -118,7 +120,8 @@ function createBot() {
   bot.on('chat', (username, message) => {
     logMsg(`<${username}> ${message}`);
 
-    if (discordClient.isReady()) {
+    // ✅ إرسال الرسائل لديسكورد فقط إذا التفعيل شغال
+    if (sendMinecraftToDiscord && discordClient.isReady()) {
       const channel = discordClient.channels.cache.get(discordChannelId);
       if (channel) {
         channel.send(`**[Minecraft]** <${username}> ${message}`);
@@ -140,6 +143,19 @@ io.on('connection', (socket) => {
 discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
 });
+
+// ✅ فحص الموقع كل 5 دقائق
+let lastWebsiteStatus = 'غير معروف';
+async function checkWebsite() {
+  try {
+    await axios.get('https://lol-33.onrender.com/');
+    lastWebsiteStatus = '✅ يعمل';
+  } catch (err) {
+    lastWebsiteStatus = '❌ متوقف';
+  }
+}
+setInterval(checkWebsite, 5 * 60 * 1000);
+checkWebsite();
 
 discordClient.on('messageCreate', async (message) => {
   if (message.author.bot) return;
@@ -189,6 +205,14 @@ discordClient.on('messageCreate', async (message) => {
     } else {
       message.channel.send('البوت غير مشغل حالياً.');
     }
+  } else if (content === '/pn') {
+    sendMinecraftToDiscord = !sendMinecraftToDiscord;
+    message.channel.send(sendMinecraftToDiscord ? '📩 سيتم الآن إرسال رسائل ماينكرافت إلى هنا.' : '🚫 تم إيقاف إرسال رسائل ماينكرافت.');
+  } else if (content === '/ping') {
+    message.channel.send(`📊 **حالة النظام**:
+- بوت ديسكورد: ${discordClient.isReady() ? '✅ يعمل' : '❌ متوقف'}
+- بوت ماينكرافت: ${bot ? '✅ متصل' : '❌ غير متصل'}
+- الموقع: ${lastWebsiteStatus}`);
   } else {
     if (bot && bot.chat) {
       bot.chat(content);
