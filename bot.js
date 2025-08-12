@@ -61,7 +61,7 @@ async function walkForwardBackward() {
 }
 
 function createBot() {
-  bbot = mineflayer.createBot({
+  bot = mineflayer.createBot({
   host: 'TokyoServer.aternos.me',
   port: 43234,
   username: 'TOKyodot',
@@ -138,4 +138,5 @@ function logMsg(msg) {
 }
 
 createBot();
+
 
