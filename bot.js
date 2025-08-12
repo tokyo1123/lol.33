@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 server.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 
 // ===== إعداد بوت ديسكورد =====
-const discordToken = 'MTM3ODAzMjExNjIxODA2OTAzMw.GHaZx0.PIZqUmRBTyD-UuzmIiqbrYC_Yvu3ZshM75Zrgw'; // ضع توكن بوت ديسكورد هنا
+const discordToken = 'MTM3ODAzMjExNjIxODA2OTAzMw.GG-72P.A8-7m5mfdwZ3OaKzq5RE6PRHaZ9V4VP45XybS8'; // ضع توكن بوت ديسكورد هنا
 const discordChannelId = '1404811211073392773'; // ضع معرف قناة ديسكورد التي تريد التواصل معها
 
 const discordClient = new Client({
@@ -206,3 +206,4 @@ discordClient.on('messageCreate', async (message) => {
 });
 
 discordClient.login(discordToken);
+
