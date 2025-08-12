@@ -42,24 +42,29 @@ server.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 const discordToken = process.env.DISCORD_TOKEN;
 const discordChannelId = process.env.DISCORD_CHANNEL_ID;
 
-// OpenRouter API (مجاني تمامًا، بدون مفتاح)
-const OPENROUTER_API_URL = "https://openrouter.ai/api/chat/completions";
+// HuggingFace AI Config (يمكنك استخدام OpenRouter هنا إذا تحب، بس هذا حسب كودك الأصلي)
+const HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base";
+const HF_API_KEY = process.env.HF_API_KEY || null;
 
 async function askAI(question) {
   try {
-    const response = await axios.post(OPENROUTER_API_URL, {
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: question }],
-    }, {
-      headers: {
-        "Content-Type": "application/json",
+    const response = await axios.post(
+      HF_API_URL,
+      { inputs: question },
+      {
+        headers: HF_API_KEY ? { Authorization: `Bearer ${HF_API_KEY}` } : {},
       }
-    });
+    );
 
-    // قراءة الإجابة من API
-    const answer = response.data.choices?.[0]?.message?.content;
-    if (answer) return answer.trim();
-
+    if (Array.isArray(response.data) && response.data.length > 0 && response.data[0].generated_text) {
+      return response.data[0].generated_text.trim();
+    }
+    if (typeof response.data === "string") {
+      return response.data.trim();
+    }
+    if (response.data && response.data.generated_text) {
+      return response.data.generated_text.trim();
+    }
     return "I couldn't think of an answer.";
   } catch (err) {
     console.error("AI Error:", err.message);
@@ -180,6 +185,7 @@ discordClient.on('ready', () => {
   console.log(`Discord Bot logged in as ${discordClient.user.tag}`);
 });
 
+// Website check every 5 minutes
 let lastWebsiteStatus = 'Unknown';
 async function checkWebsite() {
   try {
